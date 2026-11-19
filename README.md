@@ -13,6 +13,17 @@ provides:
 
 When *Part Pricing Update* is not active, the page only asks to activate it.
 
+## Screenshots
+
+Search on one supplier (or all of them), with the requests left today:
+
+![Search](docs/images/import-search.png)
+
+The form prepared from the selected product: category proposed from the mappings, supplier parts of the other
+suppliers, parameters mapped to the InvenTree templates and converted to their units, RoHS / REACH:
+
+![Import form](docs/images/import-preview.png)
+
 ## Usage
 
 Menu **Import from supplier**, or `/web/plugin/supplier-part-import/import`.
