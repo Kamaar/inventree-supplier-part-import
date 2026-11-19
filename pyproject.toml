@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inventree-supplier-part-import"
-description = "Cerca i componenti su Mouser, DigiKey e Farnell e li crea in InvenTree con le regole di Ki-nTree"
+description = "InvenTree plugin: search Mouser, DigiKey and Farnell and import parts with the Ki-nTree rules"
 dynamic = ["version"]
 authors = [
     { name = "Simone Amadori", email = "simone@amadori.bs.it" },
