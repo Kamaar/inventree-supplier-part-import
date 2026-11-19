@@ -109,8 +109,9 @@ with it as a dependency (activate both):
 - **from the InvenTree UI** (*Settings → Plugins → Install plugin*): *Package Name* `inventree-supplier-part-import`;
 - **or with `plugins.txt`** (InvenTree data folder): a line `inventree-supplier-part-import`.
 
-It can also be installed from the repositories with version tags (pricing plugin first):
-`inventree-supplier-part-import @ git+https://github.com/Kamaar/inventree-supplier-part-import@v0.1.22`.
+It can also be installed from the repositories with version tags of the
+[releases](https://github.com/Kamaar/inventree-supplier-part-import/releases) (pricing plugin first):
+`inventree-supplier-part-import @ git+https://github.com/Kamaar/inventree-supplier-part-import@vX.Y.Z`.
 
 With Docker, install in **both** the server and the worker container and restart them (different versions cause the
 *Plugin Registry Mismatch* error, INVE-E20):
