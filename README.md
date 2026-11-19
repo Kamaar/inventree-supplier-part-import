@@ -17,12 +17,12 @@ When *Part Pricing Update* is not active, the page only asks to activate it.
 
 Search on one supplier (or all of them), with the requests left today:
 
-![Search](docs/images/import-search.png)
+![Search](https://raw.githubusercontent.com/Kamaar/inventree-supplier-part-import/main/docs/images/import-search.png)
 
 The form prepared from the selected product: category proposed from the mappings, supplier parts of the other
 suppliers, parameters mapped to the InvenTree templates and converted to their units, RoHS / REACH:
 
-![Import form](docs/images/import-preview.png)
+![Import form](https://raw.githubusercontent.com/Kamaar/inventree-supplier-part-import/main/docs/images/import-preview.png)
 
 ## Usage
 
@@ -103,20 +103,14 @@ Creating a new part anyway needs the explicit choice *Create a new part anyway (
 
 ## Installation
 
-Both plugins are installed from their repositories, **pricing first**: this plugin depends on it, and it is not on PyPI.
-Always use **version tags**: without a tag pip does not download new commits.
+The plugin is on [PyPI](https://pypi.org/project/inventree-supplier-part-import/); the pricing plugin is installed
+with it as a dependency (activate both):
 
-**With `plugins.txt`** (InvenTree data folder), both lines:
+- **from the InvenTree UI** (*Settings → Plugins → Install plugin*): *Package Name* `inventree-supplier-part-import`;
+- **or with `plugins.txt`** (InvenTree data folder): a line `inventree-supplier-part-import`.
 
-```
-inventree-part-pricing-update @ git+https://github.com/Kamaar/inventree-part-pricing-update@v0.4.17
-inventree-supplier-part-import @ git+https://github.com/Kamaar/inventree-supplier-part-import@v0.1.21
-```
-
-**From the InvenTree UI** (*Settings → Plugins → Install plugin*), first the pricing plugin (see its README), then:
-
-- *Package Name*: `inventree-supplier-part-import`
-- *Source URL*: `git+https://github.com/Kamaar/inventree-supplier-part-import@v0.1.21`
+It can also be installed from the repositories with version tags (pricing plugin first):
+`inventree-supplier-part-import @ git+https://github.com/Kamaar/inventree-supplier-part-import@v0.1.22`.
 
 With Docker, install in **both** the server and the worker container and restart them (different versions cause the
 *Plugin Registry Mismatch* error, INVE-E20):
@@ -130,8 +124,6 @@ docker compose restart inventree-server inventree-worker
 Then activate **Supplier Part Import** (app, URL and interface integration must be enabled in *Settings → Plugins*) and
 run the migrations (`invoke migrate`, or `INVENTREE_AUTO_UPDATE=True` in Docker).
 
-The packages can also be published to a private PyPI registry (e.g. GitLab): then set `PIP_EXTRA_INDEX_URL` in the
-InvenTree `.env` and list the package names without version in `plugins.txt`.
 
 ### Default mappings
 
@@ -231,8 +223,8 @@ Plugin metadata: `PLUGIN_VERSION` and `PLUGIN_DATE` in `__init__.py`, updated at
 `MAX_VERSION = '1.99.99'`: on a new major InvenTree version the plugin is not loaded until it has been checked (it has
 its own tables and migrations, `AppMixin`).
 
-Release: update the version in `supplier_part_import/__init__.py` and `frontend/package.json`, then tag `vX.Y.Z`
-(`tools/check_version.py` checks that the tag matches `PLUGIN_VERSION`).
+Release: update the version in `supplier_part_import/__init__.py` and `frontend/package.json`, tag `vX.Y.Z` and
+publish a GitHub release: the `publish.yml` workflow uploads the package to PyPI (Trusted Publishing).
 
 ## Credits
 

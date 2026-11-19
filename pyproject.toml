@@ -28,6 +28,11 @@ classifiers = [
     "Framework :: InvenTree",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Kamaar/inventree-supplier-part-import"
+Repository = "https://github.com/Kamaar/inventree-supplier-part-import"
+Issues = "https://github.com/Kamaar/inventree-supplier-part-import/issues"
+
 [project.entry-points."inventree_plugins"]
 SupplierPartImport = "supplier_part_import.core:SupplierPartImport"
 
