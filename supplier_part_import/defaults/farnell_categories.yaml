@@ -1,0 +1,139 @@
+# Farnell categories for the Supplier Part Import plugin, same format as the Ki-nTree
+# digikey_categories.yaml. Names: the product type in the Farnell product name (uk.farnell.com), from sample parts (2026-10-30).
+# InvenTree category -> subcategory -> [supplier categories]. "__Name": subcategory chosen by "Function Type"
+Capacitors:
+  Aluminium:
+  - SMD Aluminium Electrolytic Capacitor
+  - Electrolytic Capacitor
+  Ceramic:
+  - SMD Multilayer Ceramic Capacitor
+  - Multilayer Ceramic Capacitor
+  Polymer:
+  - Tantalum Polymer Capacitor
+  - Aluminium Polymer Capacitor
+  - Conductive Polymer Aluminium Electrolytic Capacitor
+  Super Capacitors:
+  - Supercapacitor
+  - SUPERCAP
+  Tantalum:
+  - Surface Mount Tantalum Capacitor
+  - Tantalum Capacitor
+Circuit Protections:
+  Fuses:
+  - Fuse
+  - SMD FUSE
+  PTC:
+  - Resettable Fuse
+  - PPTC RESETTABLE FUSES - SMD
+  - PTC RESETTABLE FUSE
+  TVS:
+  - TVS Diode
+  - ESD Protection Device
+Connectors:
+  Battery:
+  - Battery Holder
+  Board-to-Board:
+  - Mezzanine Connector
+  - Board-To-Board Connector
+  Coaxial:
+  - RF / Coaxial Connector
+  FPC:
+  - FFC / FPC Board Connector
+  Header:
+  - Pin Header
+  - Wire-To-Board Connector
+  Interface:
+  - USB Connector
+  - Phone Audio Connector
+Crystals and Oscillators:
+  Crystals:
+  - Crystal
+  Oscillators:
+  - Oscillator
+  - TCXO
+Diodes:
+  LED:
+  - LED
+  Schottky:
+  - Schottky Rectifier
+  - Small Signal Schottky Diode
+  Standard:
+  - Small Signal Diode
+  - Standard Recovery Diode
+  - Fast / Ultrafast Diode
+  Zener:
+  - Zener Single Diode
+Inductors:
+  Ferrite Bead:
+  - Ferrite Bead
+  Power:
+  - Power Inductor (SMD)
+  - Wirewound Inductor
+Integrated Circuits:
+  Interface:
+  - Transceiver RS232
+  - Audio Codec
+  Logic:
+  - Logic IC
+  - Voltage Level Translator
+  Memory:
+  - EEPROM
+  - Flash Memory
+  Microcontroller:
+  - ARM MCU
+  - 8 Bit MCU
+  - 16 Bit MCU
+  - 32 Bit MCU
+  Sensor:
+  - MEMS Accelerometer
+Mechanicals:
+  Standoff:
+  - Standoff
+  Switch:
+  - Tactile Switch
+  - Slide Switch
+Miscellaneous:
+  Batteries:
+  - Battery
+  - Rechargeable Battery
+Power Management:
+  Buck:
+  - DC-DC Switching Buck Step Down Regulator
+  Boost:
+  - DC-DC Switching Boost Step Up Regulator
+  LDO:
+  - LDO Voltage Regulator
+  - Fixed LDO Voltage Regulator
+  PMIC:
+  - Battery Charger
+RF:
+  Antenna:
+  - Chip Antenna
+  Chipset:
+  - RF Transceiver
+  - SoC
+  Filter:
+  - Chip Balun
+  Shield:
+  - Shield
+Resistors:
+  NTC:
+  - NTC Thermistor
+  Potentiometers:
+  - Trimmer
+  - Rotary Potentiometer
+  Surface Mount:
+  - SMD Chip Resistor
+  Through Hole:
+  - Through Hole Resistor
+Transistors:
+  __N-Channel FET:
+  - Power MOSFET
+  - MOSFET
+  __P-Channel FET:
+  - Power MOSFET
+  - MOSFET
+  __NPN:
+  - Bipolar (BJT) Single Transistor
+  __PNP:
+  - Bipolar (BJT) Single Transistor

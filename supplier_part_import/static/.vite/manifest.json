@@ -1,0 +1,24 @@
+{
+  "_api-B0yfx6Sn.js": {
+    "file": "assets/api-B0yfx6Sn.js",
+    "name": "api"
+  },
+  "src/ImportPage.tsx": {
+    "file": "ImportPage-MqhFzIkv.js",
+    "name": "ImportPage",
+    "src": "src/ImportPage.tsx",
+    "isEntry": true,
+    "imports": [
+      "_api-B0yfx6Sn.js"
+    ]
+  },
+  "src/Settings.tsx": {
+    "file": "Settings-DZ1XxeSE.js",
+    "name": "Settings",
+    "src": "src/Settings.tsx",
+    "isEntry": true,
+    "imports": [
+      "_api-B0yfx6Sn.js"
+    ]
+  }
+}

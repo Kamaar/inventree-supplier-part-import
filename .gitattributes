@@ -1,0 +1,9 @@
+# Line endings: LF in the repository and in the working tree (also on Windows)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+
+# Internal CI (GitLab runner, package registry): not in the public copy
+.gitlab-ci.yml export-ignore

@@ -1,0 +1,2 @@
+recursive-include supplier_part_import/static *
+recursive-include supplier_part_import/defaults *.yaml

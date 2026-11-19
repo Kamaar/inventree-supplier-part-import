@@ -1,0 +1,31 @@
+{
+  "name": "inventree-supplier-part-import",
+  "private": true,
+  "version": "0.1.21",
+  "type": "module",
+  "scripts": {
+    "lint": "biome check ./src",
+    "build": "tsc -b && vite build --emptyOutDir",
+    "lint:fix": "biome check ./src --write"
+  },
+  "dependencies": {
+    "@inventreedb/ui": "^1.7.0",
+    "@mantine/core": ">= 9.2.1",
+    "@mantine/hooks": ">= 9.2.1",
+    "@mantine/notifications": ">= 9.2.1",
+    "react": ">= 19.2.4",
+    "react-dom": ">= 19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "~5.6.2",
+    "vite": "^6.4.2",
+    "vite-plugin-externals": "^0.6.2",
+    "@biomejs/biome": "2.0.0"
+  },
+  "overrides": {
+    "vite": "^6.4.2"
+  }
+}

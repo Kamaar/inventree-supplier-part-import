@@ -1,0 +1,331 @@
+# Ki-nTree supplier_parameters.yaml (https://github.com/sparkmicro/Ki-nTree, GPL-3.0)
+# with the Farnell parameter names (uk.farnell.com) added for the Supplier Part Import plugin.
+# Scope -> {InvenTree parameter template: [supplier parameter names], parent: [scopes]}
+Base:
+  Temperature Range:
+  - Operating Temperature
+  Package Type:
+  - Package / Case
+  - Diode Case Style
+  - Transistor Case Style
+  - IC Case / Package
+  - Capacitor Case / Package
+  - Fuse Case Style
+Passives:
+  Tolerance:
+  - Tolerance
+  - Capacitance Tolerance
+  - Inductance Tolerance
+  - Resistance Tolerance
+Capacitors:
+  parent:
+  - Base
+  - Passives
+  ESR:
+  - ESR (Equivalent Series Resistance)
+  Package Height:
+  - Height - Seated (Max)
+  - Thickness (Max)
+  Package Size:
+  - Size / Dimension
+  Rated Voltage:
+  - Voltage - Rated
+  - Voltage Rated
+  - Voltage(DC)
+  Temperature Grade:
+  - Temperature Coefficient
+  - Dielectric Characteristic
+  Temperature Range:
+  - Operating Temperature
+  Value:
+  - Capacitance
+Circuit Protections:
+  parent:
+  - Base
+  Breakdown Voltage:
+  - Voltage - Breakdown (Min)
+  - Minimum Breakdown Voltage
+  Capacitance:
+  - Capacitance @ Frequency
+  Clamping Voltage:
+  - Voltage - Clamping (Max) @ Ipp
+  - Clamping Voltage Max
+  Rated Current:
+  - Current Rating (Amps)
+  - Current - Max
+  - Fuse Current
+  Rated Power:
+  - Power - Peak Pulse
+  - Peak Pulse Power Dissipation
+  Rated Voltage:
+  - Voltage Rating - DC
+  - Voltage - Max
+  - Voltage Rating VDC
+  Standoff Voltage:
+  - Voltage - Reverse Standoff (Typ)
+  - Reverse Standoff Voltage
+  Value:
+  - Manufacturer Part Number
+Connectors:
+  Frequency:
+  - Frequency - Max
+  Interface Type:
+  - Connector Type
+  - Flat Flex Type
+  Locking:
+  - Locking Feature
+  - Fastening Type
+  Mating Height:
+  - Mated Stacking Heights
+  Mounting Type:
+  - Mounting Type
+  - Contact Termination Type
+  Number of Contacts:
+  - Number of Contacts
+  - Number of Positions
+  - No. of Contacts
+  Number of Rows:
+  - Number of Rows
+  - No. of Rows
+  Orientation:
+  - Orientation
+  Package Height:
+  - Height Above Board
+  - Insulation Height
+  Pitch:
+  - Pitch
+  - Pitch - Mating
+  - Pitch Spacing
+  Polarity:
+  - Gender
+  Shielding:
+  - Shielding
+  Temperature Range:
+  - Operating Temperature
+  Value:
+  - Manufacturer Part Number
+Crystals and Oscillators:
+  parent:
+  - Base
+  Frequency Stability:
+  - Frequency Stability
+  - Frequency Stability + / -
+  Frequency Tolerance:
+  - Frequency Tolerance
+  - Frequency Tolerance + / -
+  Load Capacitance:
+  - Load Capacitance
+  Package Height:
+  - Height - Seated (Max)
+  Package Size:
+  - Size / Dimension
+  - Crystal Case / Package
+  Rated Current:
+  - Current - Supply (Max)
+  Rated Voltage:
+  - Voltage - Supply
+  Value:
+  - Frequency
+  - Crystal Frequency
+  - Frequency Nom
+Diodes:
+  parent:
+  - Base
+  Forward Voltage:
+  - Voltage - Forward (Vf) (Max) @ If
+  - Voltage - Forward (Vf) (Typ)
+  - Forward Voltage Max
+  Function Type:
+  - Diode Type
+  LED Color:
+  - Color
+  Rated Current:
+  - Current - Average Rectified (Io)
+  - Average Forward Current
+  Rated Power:
+  - Power - Max
+  - Power Dissipation
+  Rated Voltage:
+  - Voltage - DC Reverse (Vr) (Max)
+  - Voltage - Zener (Nom) (Vz)
+  - Repetitive Peak Reverse Voltage
+  - Zener Voltage Nom
+  Temperature Range:
+  - Operating Temperature - Junction
+  Value:
+  - Manufacturer Part Number
+Inductors:
+  parent:
+  - Base
+  - Passives
+  DC Resistance:
+  - DC Resistance (DCR)
+  - DC Resistance (DCR) (Max)
+  - DC Resistance Max
+  Package Height:
+  - Height - Seated (Max)
+  - Height (Max)
+  - Product Height
+  Package Size:
+  - Size / Dimension
+  - Power Inductor Case
+  Rated Current:
+  - Current Rating (Max)
+  - Current Rating (Amps)
+  - RMS Current (Irms)
+  Saturation Current:
+  - Current - Saturation
+  - Saturation Current (Isat)
+  Shielding:
+  - Shielding
+  - Inductor Construction
+  Value:
+  - Inductance
+  - Impedance @ Frequency
+Integrated Circuits:
+  parent:
+  - Base
+  Frequency:
+  - Clock Frequency
+  - Speed
+  - Data Rate
+  - Frequency Range
+  - -3db Bandwidth
+  - Frequency
+  Function Type:
+  - Translator Type
+  - Technology
+  - Core Processor
+  - Type
+  - Sensor Type
+  Memory Size:
+  - Program Memory Size
+  - Memory Size
+  Number of Channels:
+  - Channels per Circuit
+  Rated Voltage:
+  - Voltage - VCCA
+  - Voltage - VCCB
+  - Voltage - Supply
+  - Voltage - Supply (Vcc/Vdd)
+  - Voltage - Supply, Digital
+  - Voltage - Supply, Single (V+)
+  - Supply Voltage
+  Value:
+  - Manufacturer Part Number
+Mechanicals:
+  parent:
+  - Base
+  Function Type:
+  - Circuit
+  - Type
+  Mounting Type:
+  - Mounting Type
+  - Features
+  Package Height:
+  - Between Board Height
+  Package Size:
+  - Outline
+  - Diameter - Outside
+  Package Type:
+  - Screw, Thread Size
+  Rated Current:
+  - Contact Rating @ Voltage
+  Value:
+  - Manufacturer Part Number
+Power Management:
+  parent:
+  - Base
+  Min Output Voltage:
+  - Voltage - Output (Min/Fixed)
+  Frequency:
+  - Frequency - Switching
+  Function Type:
+  - Topology
+  Max Input Voltage:
+  - Voltage - Input (Max)
+  Max Output Voltage:
+  - Voltage - Output (Max)
+  Min Input Voltage:
+  - Voltage - Input (Min)
+  Output Type:
+  - Output Type
+  Package Type:
+  - Supplier Device Package
+  Quiescent Current:
+  - Current - Quiescent (Iq)
+  Rated Current:
+  - Current - Output
+  Value:
+  - Manufacturer Part Number
+  Output Current:
+  - Current - Output
+  - Output Current
+RF:
+  parent:
+  - Base
+  Frequency:
+  - Frequency Range
+  Function Type: null
+  Rated Voltage: null
+  Value:
+  - Manufacturer Part Number
+Resistors:
+  parent:
+  - Passives
+  Package Type:
+  - Supplier Device Package
+  - Resistor Case / Package
+  Rated Power:
+  - Power (Watts)
+  - Power Rating
+  Temperature Range:
+  - Operating Temperature
+  Value:
+  - Resistance
+  B Constant:
+  - B25/50
+  - B25/85
+  - B25/100
+  - B0/50
+  - B-Constant
+  - B Value
+Transistors:
+  Collector Gate Voltage:
+  - Vce Saturation (Max) @ Ib, Ic
+  - Vgs(th) (Max) @ Id
+  - Gate Source Threshold Voltage Max
+  Function Type:
+  - Transistor Type
+  - FET Type
+  - Channel Type
+  - Transistor Polarity
+  Maximum Gate Voltage:
+  - Vgs (Max)
+  Package Type:
+  - Supplier Device Package
+  - Transistor Case Style
+  RDS On Resistance:
+  - Rds On (Max) @ Id, Vgs
+  - Drain Source On State Resistance
+  Rated Current:
+  - Current - Collector (Ic) (Max)
+  - Current - Continuous Drain (Id) @ 25°C
+  - Continuous Drain Current Id
+  - Continuous Collector Current
+  Rated Power:
+  - Power - Max
+  - Power Dissipation (Max)
+  - Power Dissipation
+  Rated Voltage:
+  - Voltage - Collector Emitter Breakdown (Max)
+  - Drain to Source Voltage (Vdss)
+  - Drain Source Voltage Vds
+  - Collector Emitter Voltage Max
+  Temperature Range:
+  - Operating Temperature
+  Value:
+  - Manufacturer Part Number
+  RDS On Voltage:
+  - Drive Voltage (Max Rds On, Min Rds On)
+  - Rds(on) Test Voltage

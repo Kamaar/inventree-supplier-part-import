@@ -1,0 +1,153 @@
+# Mouser categories for the Supplier Part Import plugin, same format as the Ki-nTree
+# digikey_categories.yaml. Names: the 'Category' of the Mouser products, from sample parts (2026-10-30).
+# InvenTree category -> subcategory -> [supplier categories]. "__Name": subcategory chosen by "Function Type"
+Capacitors:
+  Aluminium:
+  - Aluminium Electrolytic Capacitors - SMD
+  - Aluminium Electrolytic Capacitors - Radial Leaded
+  - Aluminum Electrolytic Capacitors - SMD
+  - Aluminum Electrolytic Capacitors - Radial Leaded
+  Ceramic:
+  - Multilayer Ceramic Capacitors MLCC - SMD/SMT
+  - Multilayer Ceramic Capacitors MLCC - Leaded
+  Polymer:
+  - Tantalum Capacitors - Polymer
+  - Aluminium Organic Polymer Capacitors
+  - Aluminum Organic Polymer Capacitors
+  Super Capacitors:
+  - Supercapacitors / Ultracapacitors
+  Tantalum:
+  - Tantalum Capacitors - Solid SMD
+  - Tantalum Capacitors - Solid Leaded
+Circuit Protections:
+  Fuses:
+  - Surface Mount Fuses
+  - Cartridge Fuses
+  PTC:
+  - Resettable Fuses - PPTC
+  TVS:
+  - ESD Protection Diodes / TVS Diodes
+  - ESD Suppressors / TVS Diodes
+Connectors:
+  Battery:
+  - Coin Cell Battery Holders
+  - Battery Holders, Clips & Contacts
+  Board-to-Board:
+  - Board to Board & Mezzanine Connectors
+  Coaxial:
+  - RF Connectors / Coaxial Connectors
+  FPC:
+  - FFC & FPC Connectors
+  Header:
+  - Headers & Wire Housings
+  Interface:
+  - USB Connectors
+  - Phone Connectors
+  - HDMI Connectors
+  - Modular Connectors / Ethernet Connectors
+Crystals and Oscillators:
+  Crystals:
+  - Crystals
+  Oscillators:
+  - Standard Clock Oscillators
+  - TCXO Oscillators
+Diodes:
+  LED:
+  - Single Colour LEDs
+  - Standard LEDs - SMD
+  Schottky:
+  - Schottky Diodes & Rectifiers
+  Standard:
+  - Small Signal Switching Diodes
+  - Rectifiers
+  Zener:
+  - Zener Diodes
+Inductors:
+  Ferrite Bead:
+  - Ferrite Beads
+  Power:
+  - Power Inductors - SMD
+  - Fixed Inductors
+Integrated Circuits:
+  Interface:
+  - RS-232 Interface IC
+  - Interface - CODECs
+  Logic:
+  - Logic Gates
+  - Translation - Voltage Levels
+  - Buffers & Line Drivers
+  Memory:
+  - NOR Flash
+  - EEPROM
+  - NAND Flash
+  - SRAM
+  Microcontroller:
+  - ARM Microcontrollers - MCU
+  - 8-bit Microcontrollers - MCU
+  - 16-bit Microcontrollers - MCU
+  - 32-bit Microcontrollers - MCU
+  Sensor:
+  - Accelerometers
+  - Air Quality Sensors
+  - Humidity/Temperature Sensors
+  - Board Mount Temperature Sensors
+  - IMUs - Inertial Measurement Units
+Mechanicals:
+  Standoff:
+  - Standoffs & Spacers
+  Switch:
+  - Tactile Switches
+  - Slide Switches
+Miscellaneous:
+  Batteries:
+  - Coin Cell Battery
+Modules:
+- Multiprotocol Modules
+- WiFi Modules (802.11)
+- Bluetooth Modules (802.15.1)
+Power Management:
+  __Boost:
+  - Switching Voltage Regulators
+  __Buck:
+  - Switching Voltage Regulators
+  LDO:
+  - LDO Voltage Regulators
+  PMIC:
+  - Battery Management
+  - Power Management Specialised - PMIC
+  - Power Management Specialized - PMIC
+RF:
+  Antenna:
+  - Antennas
+  Chipset:
+  - RF System on a Chip - SoC
+  - RF Transceiver
+  Filter:
+  - Signal Conditioning
+  Shield:
+  - EMI Gaskets, Sheets, Absorbers & Shielding
+Resistors:
+  NTC:
+  - NTC (Negative Temperature Coefficient) Thermistors
+  - NTC Thermistors
+  Potentiometers:
+  - Trimmer Resistors - Through Hole
+  - Trimmer Resistors - SMD
+  - Potentiometers
+  Surface Mount:
+  - Thick Film Resistors - SMD
+  - Thin Film Resistors - SMD
+  Through Hole:
+  - Metal Film Resistors - Through Hole
+  - Carbon Film Resistors - Through Hole
+Transistors:
+  Load Switches:
+  - Power Switch ICs - Power Distribution
+  __N-Channel FET:
+  - MOSFETs
+  __P-Channel FET:
+  - MOSFETs
+  __NPN:
+  - Bipolar Transistors - BJT
+  __PNP:
+  - Bipolar Transistors - BJT

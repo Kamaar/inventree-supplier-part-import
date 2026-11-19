@@ -1,0 +1,63 @@
+# Packaging for the SupplierPartImport InvenTree plugin.
+# Structure follows the InvenTree plugin-creator template:
+# https://github.com/inventree/plugin-creator
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inventree-supplier-part-import"
+description = "Cerca i componenti su Mouser, DigiKey e Farnell e li crea in InvenTree con le regole di Ki-nTree"
+dynamic = ["version"]
+authors = [
+    { name = "Simone Amadori", email = "simone@amadori.bs.it" },
+]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+keywords = ["inventree", "plugin", "import", "mouser", "digikey", "farnell", "ki-ntree"]
+requires-python = ">=3.10"
+dependencies = [
+    # Supplier API clients, credentials and daily quota (part_pricing_update.api);
+    # 0.4.9: Farnell category (product type), aliases of the renamed products
+    "inventree-part-pricing-update>=0.4.9",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Framework :: InvenTree",
+]
+
+[project.entry-points."inventree_plugins"]
+SupplierPartImport = "supplier_part_import.core:SupplierPartImport"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pyyaml>=6",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = [""]
+include = ["supplier_part_import*"]
+
+[tool.setuptools.package-data]
+supplier_part_import = ["static/**/*", "defaults/*.yaml"]
+
+[tool.setuptools.dynamic]
+version = { attr = "supplier_part_import.PLUGIN_VERSION" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+src = ["supplier_part_import"]
+exclude = [".git", "__pycache__", ".venv", "frontend", "build", "dist"]
+
+[tool.ruff.lint]
+ignore = ["I001", "PIE790", "RUF012"]
+
+[tool.uv.sources]
+# The pricing plugin is not on PyPI: installed from its repository
+inventree-part-pricing-update = { git = "https://github.com/Kamaar/inventree-part-pricing-update" }
