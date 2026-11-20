@@ -107,23 +107,71 @@ The plugin is on [PyPI](https://pypi.org/project/inventree-supplier-part-import/
 with it as a dependency (activate both):
 
 - **from the InvenTree UI** (*Settings → Plugins → Install plugin*): *Package Name* `inventree-supplier-part-import`;
-- **or with `plugins.txt`** (InvenTree data folder): a line `inventree-supplier-part-import`.
+- **or with `plugins.txt`** (next to `config.yaml`, or the file set by `INVENTREE_PLUGIN_FILE`): a line
+  `inventree-supplier-part-import`.
+
+Both plugins add database tables: after the installation the migrations must run (`invoke migrate`), also when they are
+installed from the UI.
 
 It can also be installed from the repositories with version tags of the
 [releases](https://github.com/Kamaar/inventree-supplier-part-import/releases) (pricing plugin first):
 `inventree-supplier-part-import @ git+https://github.com/Kamaar/inventree-supplier-part-import@vX.Y.Z`.
 
-With Docker, install in **both** the server and the worker container and restart them (different versions cause the
-*Plugin Registry Mismatch* error, INVE-E20):
+Server and worker must always run the same version and be restarted after an install or update (different versions
+cause the *Plugin Registry Mismatch* error, INVE-E20).
+
+**Docker**: install in **both** the server and the worker container, then restart them.
 
 ```bash
 docker compose exec inventree-server invoke plugins
 docker compose exec inventree-worker invoke plugins
+docker compose exec inventree-server invoke migrate
 docker compose restart inventree-server inventree-worker
 ```
 
-Then activate **Supplier Part Import** (app, URL and interface integration must be enabled in *Settings → Plugins*) and
-run the migrations (`invoke migrate`, or `INVENTREE_AUTO_UPDATE=True` in Docker).
+**Package installer** (Debian/Ubuntu `.deb`): server and worker share the same environment, `invoke` runs through the
+`inventree` command.
+
+```bash
+sudo inventree run invoke plugins
+sudo inventree run invoke migrate
+sudo inventree restart
+```
+
+Activate the plugins only after `invoke plugins`, then run `invoke migrate` **again** with the services stopped: the
+tables of a plugin are created only when it is active. If the migrations of an active plugin are missing, server and
+worker stop at startup with *INVE-W8: Database Migrations required* and systemd restarts them in a loop (the web page
+does not open, `inventree logs --tail` shows the error):
+
+```bash
+sudo systemctl stop inventree
+sudo inventree run invoke migrate
+sudo systemctl start inventree
+```
+
+**Bare metal from source**: as the `inventree` user, with the InvenTree virtual environment active, from the source
+folder and with the same configuration as the server (`config.yaml` or `INVENTREE_*` variables; otherwise `invoke`
+works on another database or `plugins.txt`).
+
+```bash
+sudo su inventree
+source /home/inventree/env/bin/activate
+cd /home/inventree/src
+invoke plugins
+invoke migrate
+```
+
+Then restart the web server (gunicorn) **and** the worker (`invoke worker`), for example `sudo supervisorctl restart all`
+with the supervisor setup of the InvenTree documentation.
+
+Then activate **Part Pricing Update** and **Supplier Part Import** (app, URL, schedule and interface integration must be
+enabled in *Settings → Plugins*), run the migrations (`invoke migrate`, as above; with `INVENTREE_AUTO_UPDATE=True`
+they run automatically) and restart server and worker.
+
+Then configure the pricing plugin and check it ([Check the installation](https://github.com/Kamaar/inventree-part-pricing-update#check-the-installation)):
+API keys, and the supplier companies **Mouser**, **DigiKey** and **Farnell** (*Is supplier* enabled), which a new
+database does not have. Search a supplier code in the import page and import it: the part, its supplier part and the
+prices are created.
 
 
 ### Default mappings

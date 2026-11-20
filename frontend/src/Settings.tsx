@@ -16,7 +16,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useState } from 'react';
 
-import { API_ROOT, errorMessage } from './api';
+import { API_ROOT, errorMessage, LONG_TIMEOUT } from './api';
 
 type Mappings = {
   categories: {
@@ -44,7 +44,11 @@ function DefaultMappings({ context, onDone }: { context: InvenTreePluginContext;
   const load = useCallback(() => {
     setBusy(true);
     context.api
-      .post(`${API_ROOT}/mappings/defaults/`, { replace, create_categories: createCategories })
+      .post(
+        `${API_ROOT}/mappings/defaults/`,
+        { replace, create_categories: createCategories },
+        { timeout: LONG_TIMEOUT },
+      )
       .then((response) => {
         setSummary(response.data);
         onDone();
@@ -117,7 +121,11 @@ function KintreeImport({ context, onDone }: { context: InvenTreePluginContext; o
         contents[file.name] = await file.text();
       }
 
-      const response = await context.api.post(`${API_ROOT}/mappings/`, { files: contents, replace });
+      const response = await context.api.post(
+        `${API_ROOT}/mappings/`,
+        { files: contents, replace },
+        { timeout: LONG_TIMEOUT },
+      );
       setSummary(response.data);
       onDone();
     } catch (err) {
@@ -332,7 +340,7 @@ function ImportSettings({ context }: { context: InvenTreePluginContext }) {
 
   const load = useCallback(() => {
     context.api
-      .get(`${API_ROOT}/mappings/`)
+      .get(`${API_ROOT}/mappings/`, { timeout: LONG_TIMEOUT })
       .then((response) => setData(response.data))
       .catch((err) => notifications.show({ title: 'Mappings', message: errorMessage(err), color: 'red' }));
   }, [context.api]);

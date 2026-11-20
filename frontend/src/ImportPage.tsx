@@ -624,7 +624,7 @@ function ImportPage({ context }: { context: InvenTreePluginContext }) {
 
   const loadStatus = useCallback(() => {
     context.api
-      .get(`${API_ROOT}/status/`)
+      .get(`${API_ROOT}/status/`, { timeout: LONG_TIMEOUT })
       .then((response) => {
         setStatus(response.data);
         setSupplier((s) => s || (response.data.suppliers?.length ? 'all' : ''));
