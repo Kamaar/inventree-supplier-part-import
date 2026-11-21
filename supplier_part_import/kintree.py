@@ -31,7 +31,8 @@ def find_category(path: list[str], create: bool = False):
     """
     from part.models import PartCategory
 
-    category = PartCategory.objects.filter(pathstring='/'.join(path)).first()
+    # Case insensitive: a path typed by the user ('rf/shield') must not duplicate 'RF/Shield'
+    category = PartCategory.objects.filter(pathstring__iexact='/'.join(path)).first()
 
     if category is not None or not create:
         return category

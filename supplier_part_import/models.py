@@ -128,3 +128,26 @@ class TemplateUnit(PluginPermissionMixin, models.Model):
 
     def __str__(self):
         return f'{self.name} [{self.units}]'
+
+
+class PreviewSession(models.Model):
+    """Data of a preview, kept for the import (in the database: shared by every server process).
+
+    The Django cache is not used: without Redis every gunicorn worker has its own
+    memory cache, and the import may reach a worker which never saw the preview.
+    """
+
+    class Meta:
+        app_label = 'supplier_part_import'
+        verbose_name = _('Preview Session')
+        verbose_name_plural = _('Preview Sessions')
+
+    token = models.CharField(max_length=32, unique=True, verbose_name=_('Token'))
+
+    created = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_('Created'))
+
+    # Pickled supplier details (the same objects the cache stored before)
+    data = models.BinaryField(verbose_name=_('Data'))
+
+    def __str__(self):
+        return self.token

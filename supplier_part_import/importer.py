@@ -5,9 +5,10 @@ counted in the daily quota of the PartPricingUpdate plugin.
 """
 
 import logging
+import pickle
 import uuid
+from datetime import timedelta
 
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
@@ -19,10 +20,51 @@ logger = logging.getLogger('inventree')
 
 PLUGIN_SLUG = 'supplier-part-import'
 PREVIEW_TIMEOUT = 60 * 60  # seconds a preview is kept for the import
+PREVIEW_EXPIRED = 'The preview has expired: search the product again'
 
 
 class ImportError_(Exception):
     """Error shown to the user (bad input, missing dependency)."""
+
+
+def save_preview(data: dict) -> str:
+    """Keep the data of a preview for the import; returns its token.
+
+    Stored in the database, not in the Django cache: without Redis (e.g. the .deb
+    installation) every gunicorn worker has its own memory cache, and the import
+    may be served by a worker which never saw the preview.
+    """
+    from django.utils import timezone
+
+    from .models import PreviewSession
+
+    # The expired previews are removed here: no scheduled task is needed
+    PreviewSession.objects.filter(created__lt=timezone.now() - timedelta(seconds=PREVIEW_TIMEOUT)).delete()
+
+    token = uuid.uuid4().hex
+    PreviewSession.objects.create(token=token, data=pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL))
+    return token
+
+
+def load_preview(token) -> dict:
+    """Data saved by save_preview (ImportError_ if missing or expired)."""
+    from django.utils import timezone
+
+    from .models import PreviewSession
+
+    session = PreviewSession.objects.filter(
+        token=str(token or ''), created__gte=timezone.now() - timedelta(seconds=PREVIEW_TIMEOUT)
+    ).first()
+
+    if session is None:
+        raise ImportError_(PREVIEW_EXPIRED)
+
+    try:
+        # Written only by save_preview: never data received from the client
+        return pickle.loads(bytes(session.data))
+    except Exception as exc:  # e.g. a class of the pricing plugin changed after an update
+        logger.warning('SupplierPartImport: preview %s not readable (%s)', token, exc)
+        raise ImportError_(PREVIEW_EXPIRED) from exc
 
 
 def pricing_api():
@@ -275,7 +317,7 @@ def preview(supplier: str, sku: str, searched: str = '') -> dict:
 
     Requests: the product, the same MPN on the better parameter source,
     the alternate suppliers, the DigiKey declarations. Everything is kept in
-    the cache for the import, so the import itself sends no request.
+    the database for the import (save_preview), so the import itself sends no request.
     """
     api = require_pricing_api()
     configured = api.configured_suppliers()
@@ -332,6 +374,13 @@ def preview(supplier: str, sku: str, searched: str = '') -> dict:
     parameter_details = english_details(api, parameter_source, warnings)
 
     category = propose_category([parameter_details, primary] + [d for d in sources.values() if d])
+    # Proposed by a mapping: otherwise the user is asked to remember the category chosen
+    mapped = category is not None
+
+    if category is None:
+        # No mapping: the category named as the supplier one (created by the import if missing)
+        category = supplier_category_fallback([parameter_details, primary])
+
     proposal = category_proposal(sources, supplier, parameter_details, category)
 
     declarations = []
@@ -373,19 +422,14 @@ def preview(supplier: str, sku: str, searched: str = '') -> dict:
     }
     existing_parts = existing_candidates(**existing_codes)
 
-    token = uuid.uuid4().hex
-    cache.set(
-        f'{PLUGIN_SLUG}:{token}',
-        {
-            'sources': sources,
-            'declarations': declarations,
-            'primary': supplier,
-            'parameter_source': parameter_source.supplier,
-            'parameter_details': parameter_details,
-            'existing_codes': existing_codes,
-        },
-        PREVIEW_TIMEOUT,
-    )
+    token = save_preview({
+        'sources': sources,
+        'declarations': declarations,
+        'primary': supplier,
+        'parameter_source': parameter_source.supplier,
+        'parameter_details': parameter_details,
+        'existing_codes': existing_codes,
+    })
 
     return {
         'token': token,
@@ -405,7 +449,7 @@ def preview(supplier: str, sku: str, searched: str = '') -> dict:
         'mpn': primary.mpn,
         'parameter_source': parameter_source.supplier,
         'supplier_category': parameter_source.category,
-        'category_proposed': category is not None,
+        'category_proposed': mapped,
         'parameters': proposal['parameters'],
         'supplier_parts': supplier_parts,
         'declarations': [{**d, 'url': rules.normalize_url(d['url'])} for d in declarations if rules.normalize_url(d['url'])],
@@ -482,13 +526,18 @@ def proposal_for_category(token: str, category_pk, new_category: str = '') -> di
     """
     from part.models import PartCategory
 
-    cached = cache.get(f'{PLUGIN_SLUG}:{token}')
+    from . import kintree
 
-    if not cached:
-        raise ImportError_('The preview has expired: search the product again')
+    cached = load_preview(token)
 
     if new_category and not category_pk:
-        category = PendingCategory(new_category.split('/'))
+        path = category_path_names(new_category)
+
+        if not path:
+            raise ImportError_('Enter the path of the new category')
+
+        # A path typed by the user may be an existing category
+        category = kintree.find_category(path) or PendingCategory(path)
     else:
         category = PartCategory.objects.filter(pk=category_pk).first() if category_pk else None
     details = cached.get('parameter_details') or cached['sources'].get(cached['parameter_source'])
@@ -553,6 +602,52 @@ class PendingCategory:
 
     def __repr__(self):
         return f'PendingCategory({self.pathstring!r})'
+
+
+def category_path_names(path) -> list[str]:
+    """'Semiconductors / TRIAC' -> ['Semiconductors', 'TRIAC'] (empty names removed)."""
+    return [name.strip()[:100] for name in str(path or '').split('/') if name.strip()]
+
+
+def supplier_category_fallback(details_list):
+    """Category from the supplier category, when no mapping matches it.
+
+    The supplier name of the deepest level ('TRIACs') is used: the existing category
+    with that name, otherwise a new one (PendingCategory, created by the import) below
+    the existing category named as one of the upper supplier levels, or at the root.
+    Returns a PartCategory, a PendingCategory or None (no supplier category).
+    """
+    from part.models import PartCategory
+
+    def unique(name):
+        matches = list(PartCategory.objects.filter(name__iexact=name)[:2])
+        return matches[0] if len(matches) == 1 else None
+
+    for details in details_list:
+        if not details or not details.category:
+            continue
+
+        # A '/' in a supplier name would be read as a level of the path
+        names = [str(n).replace('/', '-').strip()[:100] for n in details.category if str(n).strip()]
+
+        if not names:
+            continue
+
+        leaf = names[-1]
+        existing = unique(leaf)
+
+        if existing is not None:
+            return existing
+
+        for name in reversed(names[:-1]):
+            parent = unique(name)
+
+            if parent is not None:
+                return PendingCategory([c.name for c in parent.get_ancestors(include_self=True)] + [leaf])
+
+        return PendingCategory([leaf])
+
+    return None
 
 
 def category_names(category) -> list[str]:
@@ -691,11 +786,7 @@ def create(data: dict, user=None) -> dict:
     from part.models import Part, PartCategory
 
     api = require_pricing_api()
-    cached = cache.get(f'{PLUGIN_SLUG}:{data.get("token")}')
-
-    if not cached:
-        raise ImportError_('The preview has expired: search the product again')
-
+    cached = load_preview(data.get('token'))
     sources = cached['sources']
     warnings = []
     form = data.get('part') or {}
@@ -731,10 +822,11 @@ def create(data: dict, user=None) -> dict:
                 # Category proposed by a pending mapping: created now, with the missing parents
                 from . import kintree
 
-                path = [name.strip() for name in str(form['new_category']).split('/') if name.strip()]
-                category = kintree.find_category(path, create=True) if path else None
+                path = category_path_names(form['new_category'])
+                existed = kintree.find_category(path) if path else None
+                category = existed or (kintree.find_category(path, create=True) if path else None)
 
-                if category is not None:
+                if category is not None and existed is None:
                     warnings.append(f'Category "{category.pathstring}" created')
                     kintree.resolve_pending()
 

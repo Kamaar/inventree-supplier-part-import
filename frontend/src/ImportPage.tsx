@@ -158,23 +158,26 @@ function PreviewForm({
 
   const setPart = (field: string, value: any) => setForm((f) => ({ ...f, part: { ...f.part, [field]: value } }));
 
-  const changeCategory = useCallback(
-    (value: string | null) => {
-      // An existing category replaces the one to create
-      setForm((f) => ({ ...f, part: { ...f.part, category: value ? Number(value) : null, new_category: '' } }));
+  // Path typed in the 'New category' field (applied on blur or Enter)
+  const [newCategoryInput, setNewCategoryInput] = useState<string>(preview.part.new_category);
 
-      if (!value) {
-        return;
-      }
-
-      // Parameters mapping and IPN depend on the category
+  // Parameters mapping and IPN depend on the category (existing, or a path to create)
+  const loadProposal = useCallback(
+    (category: string | null, newCategory: string) => {
       context.api
-        .get(`${API_ROOT}/proposal/`, { params: { token: preview.token, category: value } })
+        .get(`${API_ROOT}/proposal/`, { params: { token: preview.token, category, new_category: newCategory } })
         .then((response) => {
           const proposal: Proposal = response.data;
           setForm((f) => ({
             ...f,
-            part: { ...f.part, IPN: proposal.IPN || f.part.IPN, category_path: proposal.category_path },
+            part: {
+              ...f.part,
+              IPN: proposal.IPN || f.part.IPN,
+              category_path: proposal.category_path,
+              // A typed path may be an existing category
+              category: proposal.category,
+              new_category: proposal.category ? '' : proposal.new_category,
+            },
             parameters: proposal.parameters,
           }));
         })
@@ -182,6 +185,40 @@ function PreviewForm({
     },
     [context.api, preview.token],
   );
+
+  const changeCategory = useCallback(
+    (value: string | null) => {
+      // An existing category replaces the one to create
+      setForm((f) => ({ ...f, part: { ...f.part, category: value ? Number(value) : null, new_category: '' } }));
+
+      if (value) {
+        setNewCategoryInput('');
+        loadProposal(value, '');
+      }
+    },
+    [loadProposal],
+  );
+
+  const applyNewCategory = useCallback(() => {
+    const path = newCategoryInput
+      .split('/')
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join('/');
+
+    if (!path) {
+      setForm((f) => ({ ...f, part: { ...f.part, new_category: '' } }));
+      return;
+    }
+
+    if (path === form.part.new_category && !form.part.category) {
+      return;
+    }
+
+    // A category to create replaces the existing one selected
+    setForm((f) => ({ ...f, part: { ...f.part, category: null, new_category: path } }));
+    loadProposal(null, path);
+  }, [newCategoryInput, form.part.new_category, form.part.category, loadProposal]);
 
   const setParameter = (index: number, field: string, value: any) =>
     setForm((f) => ({
@@ -415,6 +452,19 @@ function PreviewForm({
                 required
                 placeholder={form.part.new_category ? `New: ${form.part.new_category}` : undefined}
                 description={`${form.parameter_source} category: ${form.supplier_category.join(' / ') || '-'}`}
+              />
+              <TextInput
+                label='Or create a new category'
+                description='Path of the category to create with the part (the missing parents are created too)'
+                placeholder={`e.g. Semiconductors/${form.supplier_category.at(-1) ?? 'TRIAC'}`}
+                value={newCategoryInput}
+                onChange={(e) => setNewCategoryInput(e.currentTarget.value)}
+                onBlur={applyNewCategory}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    applyNewCategory();
+                  }
+                }}
               />
               {form.part.new_category && !form.part.category && (
                 <Group gap='xs'>

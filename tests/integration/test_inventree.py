@@ -1,9 +1,9 @@
 """The plugin on a real InvenTree: default mappings, categories, duplicates, parameters, maintenance."""
 
-import uuid
+from datetime import timedelta
 
+import pytest
 from django.contrib.contenttypes.models import ContentType
-from django.core.cache import cache
 
 from supplier_part_import import importer, kintree
 from supplier_part_import.models import CategoryMapping, ParameterScope
@@ -79,11 +79,10 @@ def test_pending_category_is_created_by_the_import(clean_mappings):
     proposal = importer.category_proposal({'mouser': shield}, 'mouser', shield, category)
     assert proposal['category'] is None and proposal['new_category'] == 'RF/Shield'
 
-    token = uuid.uuid4().hex
-    cache.set(f'supplier-part-import:{token}', {
+    token = importer.save_preview({
         'sources': {'mouser': shield}, 'declarations': [], 'primary': 'mouser', 'parameter_source': 'mouser',
         'parameter_details': shield, 'existing_codes': {},
-    }, 600)
+    })
     result = importer.create({
         'token': token,
         'part': {'name': 'BMI-S-201-F', 'description': 'Shield', 'category': None, 'new_category': 'RF/Shield'},
@@ -96,6 +95,79 @@ def test_pending_category_is_created_by_the_import(clean_mappings):
     # The pending mappings of the new category are linked
     assert not CategoryMapping.objects.filter(category__isnull=True, category_path='RF/Shield').exists()
     assert CategoryMapping.objects.filter(category=part.category).exists()
+
+
+def test_preview_is_kept_in_the_database():
+    """Issue #1: the preview must be readable by any server process, not only by the one which made it."""
+    from django.utils import timezone
+
+    from supplier_part_import.models import PreviewSession
+
+    product = details('mouser', ['TRIACs'])
+    token = importer.save_preview({'sources': {'mouser': product}, 'primary': 'mouser'})
+
+    assert PreviewSession.objects.filter(token=token).exists()
+    assert importer.load_preview(token)['sources']['mouser'].sku == product.sku
+
+    with pytest.raises(importer.ImportError_, match='expired'):
+        importer.load_preview('missing')
+
+    PreviewSession.objects.filter(token=token).update(
+        created=timezone.now() - timedelta(seconds=importer.PREVIEW_TIMEOUT + 1)
+    )
+
+    with pytest.raises(importer.ImportError_, match='expired'):
+        importer.load_preview(token)
+
+    # The expired previews are removed by the next one
+    importer.save_preview({'sources': {}})
+    assert not PreviewSession.objects.filter(token=token).exists()
+
+
+def test_category_from_the_supplier_category_without_mapping(clean_mappings):
+    """Issue #2: a supplier category without mapping proposes a new category named as the supplier one."""
+    from part.models import Part, PartCategory
+
+    triac = details('digikey', ['Discrete Semiconductor Products', 'Thyristors', 'TRIACs'])
+    triac.mpn = 'BT137S-800F,118'
+
+    assert importer.propose_category([triac]) is None
+
+    # No category with the supplier names: a new one at the root
+    category = importer.supplier_category_fallback([triac])
+    assert isinstance(category, importer.PendingCategory) and category.pathstring == 'TRIACs'
+
+    # Below the existing category named as an upper supplier level
+    semiconductors = PartCategory.objects.create(name='Semiconductors')
+    thyristors = PartCategory.objects.create(name='Thyristors', parent=semiconductors)
+    category = importer.supplier_category_fallback([triac])
+    assert isinstance(category, importer.PendingCategory)
+    assert category.pathstring == 'Semiconductors/Thyristors/TRIACs'
+
+    token = importer.save_preview({
+        'sources': {'digikey': triac}, 'declarations': [], 'primary': 'digikey', 'parameter_source': 'digikey',
+        'parameter_details': triac, 'existing_codes': {},
+    })
+
+    # A path typed by the user which exists (in another case) is the existing category
+    proposal = importer.proposal_for_category(token, None, 'semiconductors / thyristors')
+    assert proposal['category'] == thyristors.pk and proposal['new_category'] == ''
+
+    result = importer.create({
+        'token': token,
+        'part': {'name': triac.mpn, 'description': 'TRIAC', 'category': None,
+                 'new_category': 'Semiconductors/Thyristors/TRIACs'},
+        'mpn': triac.mpn, 'manufacturer': 'WeEn', 'parameters': [], 'supplier_parts': [],
+        'remember_category': True,
+        'attach_datasheet': False, 'download_image': False, 'attach_declarations': False,
+    })
+
+    part = Part.objects.get(pk=result['pk'])
+    assert part.category.pathstring == 'Semiconductors/Thyristors/TRIACs'
+    # Remembered: the next TRIAC is proposed by the mapping
+    assert importer.propose_category([triac]) == part.category
+    # Now the category exists: proposed as it is
+    assert importer.supplier_category_fallback([triac]) == part.category
 
 
 def test_duplicate_found_by_the_old_mpn():
