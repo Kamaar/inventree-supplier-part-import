@@ -27,6 +27,7 @@ def to_template_units(value: str, units: str) -> str | None:
 
     sign, parts, separator = rules.split_quantity(rules.normalize_unit_text(value))
     converted = []
+    dimensionless = units != '%' and is_dimensionless_unit(units)
 
     for part in parts:
         if units == '%':
@@ -41,12 +42,62 @@ def to_template_units(value: str, units: str) -> str | None:
             converted.append(number)
             continue
 
+        if dimensionless:
+            # Same problem for 'ppm', 'ppb'...: the converter returns the fraction
+            # ('50ppm' -> 5e-05) and labels it with the template units
+            number = dimensionless_to_units(part, units)
+
+            if number is None:
+                return None
+
+            converted.append(number)
+            continue
+
         try:
             converted.append(rules.format_number(convert_physical_value(part, units)))
         except (ValidationError, ValueError, TypeError):
             return None
 
     return sign + separator.join(converted)
+
+
+def _registry():
+    from InvenTree.conversion import get_unit_registry
+
+    return get_unit_registry()
+
+
+def is_dimensionless_unit(units: str, registry=None) -> bool:
+    """True for units which are a pure number ('ppm', 'ppb', 'percent')."""
+    try:
+        registry = registry or _registry()
+        return bool(registry.Quantity(1, units).dimensionless)
+    except Exception:  # noqa: BLE001 - any pint parse error: not a known unit
+        return False
+
+
+def dimensionless_to_units(part: str, units: str, registry=None) -> str | None:
+    """'50ppm' -> '50' in 'ppm', '0.005%' -> '50' in 'ppm'; a plain number is already in the units.
+
+    None if the part is not a dimensionless quantity.
+    """
+    text = part.strip().replace(',', '.')
+
+    try:
+        return rules.format_number(float(text))
+    except ValueError:
+        pass
+
+    try:
+        registry = registry or _registry()
+        quantity = registry.Quantity(text)
+
+        if not quantity.dimensionless:
+            return None
+
+        return rules.format_number(float(quantity.to(units).magnitude))
+    except Exception:  # noqa: BLE001 - any pint parse / conversion error: not convertible
+        return None
 
 
 def plan(apply: bool = False, sample_size: int = 200) -> dict:

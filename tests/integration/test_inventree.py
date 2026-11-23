@@ -183,6 +183,19 @@ def test_duplicate_found_by_the_old_mpn():
     assert [(c['pk'], c['match']) for c in found] == [(part.pk, 'old name')]
 
 
+def test_dimensionless_template_units():
+    """'±50ppm' on a 'ppm' template is 50, not the fraction 5e-05 returned by the InvenTree converter."""
+    from supplier_part_import.units import to_template_units
+
+    assert to_template_units('±50ppm', 'ppm') == '±50'
+    assert to_template_units('±30 ppm', 'ppm') == '±30'
+    assert to_template_units('±0.005%', 'ppm') == '±50'
+    assert to_template_units('20', 'ppm') == '20'
+    assert to_template_units('±20%', '%') == '±20'
+    assert to_template_units('4 MHz', 'Hz') == '4000000'
+    assert to_template_units('5V', 'ppm') is None
+
+
 def test_parameters_replace_only_when_selected():
     from common.models import Parameter, ParameterTemplate
     from part.models import Part
