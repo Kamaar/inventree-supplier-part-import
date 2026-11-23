@@ -110,6 +110,10 @@ with it as a dependency (activate both):
 - **or with `plugins.txt`** (next to `config.yaml`, or the file set by `INVENTREE_PLUGIN_FILE`): a line
   `inventree-supplier-part-import`.
 
+Add **`inventree-part-pricing-update` to `plugins.txt` too** (the UI adds only the package you install): pip does not
+upgrade a dependency which already satisfies the requirement, so without its own line `invoke plugins` updates only
+this plugin and the pricing plugin stays at the first installed version.
+
 Both plugins add database tables: after the installation the migrations must run (`invoke migrate`), also when they are
 installed from the UI.
 
