@@ -193,6 +193,10 @@ def test_dimensionless_template_units():
     assert to_template_units('20', 'ppm') == '20'
     assert to_template_units('±20%', '%') == '±20'
     assert to_template_units('5V', 'ppm') is None
+    # Fractions saved before 0.1.28 ('±2.5ppm' -> '±2.5e-06') are converted back
+    assert to_template_units('±2.5e-06', 'ppm') == '±2.5'
+    assert to_template_units('±0.0000025', 'ppm') == '±2.5'
+    assert to_template_units('±0.5', 'ppm') == '±0.5'
 
 
 def test_si_prefix_in_template_units():

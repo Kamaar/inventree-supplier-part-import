@@ -99,17 +99,35 @@ def is_dimensionless_unit(units: str, registry=None) -> bool:
         return False
 
 
+# Plain numbers below this, in a dimensionless template, are fractions saved by the old conversion
+FRACTION_LIMIT = 1e-3
+
+
 def dimensionless_to_units(part: str, units: str, registry=None) -> str | None:
     """'50ppm' -> '50' in 'ppm', '0.005%' -> '50' in 'ppm'; a plain number is already in the units.
+
+    Except a plain number below FRACTION_LIMIT: before 0.1.28 '±2.5ppm' was saved as the
+    fraction '±2.5e-06'; no component states a stability or tolerance of a thousandth of
+    a ppm, so such a number is read as that fraction and converted back (2.5).
 
     None if the part is not a dimensionless quantity.
     """
     text = part.strip().replace(',', '.')
 
     try:
-        return rules.format_number(float(text))
+        number = float(text)
     except ValueError:
-        pass
+        number = None
+
+    if number is not None:
+        if not 0 < abs(number) < FRACTION_LIMIT:
+            return rules.format_number(number)
+
+        try:
+            registry = registry or _registry()
+            return rules.format_number(float(registry.Quantity(number, 'dimensionless').to(units).magnitude))
+        except Exception:  # noqa: BLE001 - any pint conversion error: keep the number
+            return rules.format_number(number)
 
     try:
         registry = registry or _registry()
