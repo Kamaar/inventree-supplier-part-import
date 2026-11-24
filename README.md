@@ -87,7 +87,11 @@ Creating a new part anyway needs the explicit choice *Create a new part anyway (
   created with the units of `parameters.yaml`.
 - **Units**: for templates with units InvenTree shows the unit in its own column, so the value is saved as a number in
   the template units: `25V` (unit V) → `25`, `-55~85°C` → `-55~85`, `±20%` → `±20`, `20mR` (unit mΩ) → `20`, with the
-  InvenTree conversion. Templates without units keep the unit in the value, without space (`22 µF` → `22µF`). In the
+  InvenTree conversion. Values below 1 or from 1000 keep an SI prefix without the unit: `50µA` (unit A) → `50µ`,
+  `0.5W` → `500m`, `4 MHz` (unit Hz) → `4M`, shown as *50µ A*; InvenTree reads them as the same number (filters and
+  sorting are unchanged). The prefix is used only when InvenTree reads it back as the same value (`5mm` in a template
+  with unit m stays `0.005`: `5m` would be 5 metres). Templates without units keep the unit in the value, without
+  space (`22 µF` → `22µF`). In the
   settings page, *Parameter units* applies the same conversion to the existing parameters: *Check* shows the changes,
   *Convert* applies them; values which cannot be converted are listed and left unchanged.
 - **RoHS / REACH**: the parameters `Stato RoHS`, `REACH` and the `RoHS` checkbox, with Italian values

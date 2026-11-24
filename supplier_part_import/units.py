@@ -2,8 +2,10 @@
 
 InvenTree shows the template units in their own column: a value like '25V'
 on a template with units 'V' is shown as '25V V'. The values are stored as
-numbers in the template units ('25', '-55~85', '±20'); templates without
-units keep the unit in the value, without space ('22µF').
+numbers in the template units ('25', '-55~85', '±20'); very small or large
+numbers keep an SI prefix without the unit ('1µ' on a template in A, shown as
+'1µ A'; InvenTree reads it as 1µA). Templates without units keep the unit in the
+value, without space ('22µF').
 """
 
 from django.core.exceptions import ValidationError
@@ -54,11 +56,32 @@ def to_template_units(value: str, units: str) -> str | None:
             continue
 
         try:
-            converted.append(rules.format_number(convert_physical_value(part, units)))
+            converted.append(with_si_prefix(convert_physical_value(part, units), units))
         except (ValidationError, ValueError, TypeError):
             return None
 
     return sign + separator.join(converted)
+
+
+def with_si_prefix(number: float, units: str) -> str:
+    """A number in the template units, with an SI prefix when it is very small or large.
+
+    1e-06 in A -> '1µ', 0.0047 in F -> '4.7m'. A prefixed value is used only if the
+    InvenTree converter reads it back as the same number: '5m' on a template in m
+    would be read as 5 metres, so it stays '0.005'.
+    """
+    from InvenTree.conversion import convert_physical_value
+
+    for candidate in rules.si_prefixed(number):
+        try:
+            read_back = convert_physical_value(candidate, units)
+        except (ValidationError, ValueError, TypeError):
+            continue
+
+        if abs(read_back - number) <= abs(number) * 1e-9:
+            return candidate
+
+    return rules.format_number(number)
 
 
 def _registry():

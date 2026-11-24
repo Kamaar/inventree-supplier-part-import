@@ -492,8 +492,44 @@ def normalize_unit_text(value: str) -> str:
 
 
 def format_number(number: float) -> str:
-    """Round the float noise of the conversion (21999.999999999996 -> '22000')."""
-    return f'{number:.10g}'
+    """Round the float noise of the conversion (21999.999999999996 -> '22000').
+
+    10 significant digits, always as a plain decimal number: '{:g}' alone switches to
+    exponent notation below 1e-4 and from 1e10 (1µA in A -> '1e-06', expected '0.000001').
+    """
+    from decimal import Decimal
+
+    text = f'{number:.10g}'
+
+    if 'e' not in text:
+        return text
+
+    text = format(Decimal(text), 'f')
+    return text.rstrip('0').rstrip('.') if '.' in text else text
+
+
+SI_PREFIXES = {-15: ('f',), -12: ('p',), -9: ('n',), -6: ('µ', 'u'), -3: ('m',), 3: ('k',), 6: ('M',), 9: ('G',), 12: ('T',)}
+
+
+def si_prefixed(number: float) -> list[str]:
+    """Candidates with an SI prefix and no unit: 1e-06 -> ['1µ', '1u'], 4700 -> ['4.7k'].
+
+    Empty for 0 and for values between 1 and 1000, which stay plain numbers.
+    """
+    import math
+
+    if not number or not math.isfinite(number) or 1 <= abs(number) < 1000:
+        return []
+
+    exponent = max(-15, min(12, math.floor(math.log10(abs(number)) / 3) * 3))
+    mantissa = format_number(number / 10**exponent)
+
+    # Rounding may give '1000' (999.99999999999 m): use the next prefix
+    if abs(float(mantissa)) >= 1000 and exponent < 12:
+        exponent += 3
+        mantissa = format_number(number / 10**exponent)
+
+    return [f'{mantissa}{prefix}' for prefix in SI_PREFIXES.get(exponent, ())]
 
 
 # ---------------------------------------------------------------- misc

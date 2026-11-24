@@ -192,8 +192,34 @@ def test_dimensionless_template_units():
     assert to_template_units('±0.005%', 'ppm') == '±50'
     assert to_template_units('20', 'ppm') == '20'
     assert to_template_units('±20%', '%') == '±20'
-    assert to_template_units('4 MHz', 'Hz') == '4000000'
     assert to_template_units('5V', 'ppm') is None
+
+
+def test_si_prefix_in_template_units():
+    """Very small or large values keep an SI prefix ('1µ' in A), read back by InvenTree as the same number."""
+    from InvenTree.conversion import convert_physical_value
+
+    from supplier_part_import.units import to_template_units
+
+    cases = {
+        ('1µA', 'A'): ('1µ', '1u'),
+        ('100nF', 'F'): ('100n',),
+        ('4 MHz', 'Hz'): ('4M',),
+        ('0.5W', 'W'): ('500m',),
+        ('4.7kOhm', 'ohm'): ('4.7k',),
+        ('25V', 'V'): ('25',),
+        ('-55~85°C', 'degC'): ('-55~85',),
+        # 'm' would be read as metres: no prefix
+        ('5mm', 'm'): ('0.005',),
+        ('0.1mm', 'mm'): ('0.1',),
+    }
+
+    for (value, units), expected in cases.items():
+        result = to_template_units(value, units)
+        assert result in expected, (value, units, result)
+
+    for value, units, number in [('1µ', 'A', 1e-6), ('500m', 'W', 0.5), ('4M', 'Hz', 4e6), ('1u', 'A', 1e-6)]:
+        assert abs(convert_physical_value(value, units) - number) <= number * 1e-9
 
 
 def test_parameters_replace_only_when_selected():

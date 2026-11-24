@@ -316,6 +316,45 @@ def test_normalize_unit_text_and_format():
     assert rules.format_number(25.0) == '25'
 
 
+@pytest.mark.parametrize(
+    ('number', 'expected'),
+    [
+        (1e-06, '0.000001'),
+        (5e-05, '0.00005'),
+        (4.7e-06, '0.0000047'),
+        (1e-05, '0.00001'),
+        (1.2e10, '12000000000'),
+        (-3.3e-07, '-0.00000033'),
+        (2.2000000000000002e-11, '0.000000000022'),
+        (0.0001, '0.0001'),
+        (0.0, '0'),
+    ],
+)
+def test_format_number_without_exponent(number, expected):
+    assert rules.format_number(number) == expected
+
+
+@pytest.mark.parametrize(
+    ('number', 'expected'),
+    [
+        (1e-06, ['1µ', '1u']),
+        (4.7e-06, ['4.7µ', '4.7u']),
+        (1e-07, ['100n']),
+        (0.5, ['500m']),
+        (4700.0, ['4.7k']),
+        (1.2e10, ['12G']),
+        (0.9999999999999, []),
+        (0.99999999999999e-3, ['1m']),
+        (25.0, []),
+        (999.0, []),
+        (0.0, []),
+        (-3.3e-12, ['-3.3p']),
+    ],
+)
+def test_si_prefixed(number, expected):
+    assert rules.si_prefixed(number) == expected
+
+
 @pytest.mark.parametrize('value', ['-', '--', ' - ', '', 'N/A', '?'])
 def test_placeholder_values(value):
     assert rules.is_placeholder_value(value)
