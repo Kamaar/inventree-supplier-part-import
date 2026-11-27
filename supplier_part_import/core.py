@@ -3,7 +3,7 @@
 from django.utils.translation import gettext_lazy as _
 
 from plugin import InvenTreePlugin
-from plugin.mixins import AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin
+from plugin.mixins import AppMixin, BarcodeMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin
 
 from . import PLUGIN_DATE, PLUGIN_VERSION
 
@@ -13,7 +13,7 @@ DEFAULT_IGNORED = (
 )
 
 
-class SupplierPartImport(AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
+class SupplierPartImport(AppMixin, BarcodeMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
     """SupplierPartImport - create parts from the supplier data.
 
     Requires the PartPricingUpdate plugin (supplier credentials, daily request
@@ -99,6 +99,24 @@ class SupplierPartImport(AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin,
             'validator': bool,
             'default': True,
         },
+        'CREATE_ON_SCAN': {
+            'name': _('Create parts from scanned codes'),
+            'description': _(
+                'A scanned supplier code (the P/N barcode of a Mouser, DigiKey or Farnell label) which is not '
+                'in InvenTree yet is imported with the proposed values, and the part is opened (web and app). '
+                'Only for the users who can create parts'
+            ),
+            'validator': bool,
+            'default': False,
+        },
+        'SCAN_CATEGORY': {
+            'name': _('Category of the scanned parts'),
+            'description': _(
+                'Category of the parts created from a scan when no mapping proposes one '
+                '(created if missing; a path like "Components/To classify" is allowed)'
+            ),
+            'default': 'To classify',
+        },
         # Set on the first use: the default mappings are loaded only once, into empty tables
         'DEFAULT_MAPPINGS_CHECKED': {
             'name': _('Default mappings checked'),
@@ -107,6 +125,29 @@ class SupplierPartImport(AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin,
             'hidden': True,
         },
     }
+
+    def scan(self, barcode_data, user, **kwargs):
+        """A scanned supplier code not in InvenTree yet: imported and opened (CREATE_ON_SCAN)."""
+        from . import scan
+
+        try:
+            created = scan.create_from_scan(barcode_data, user)
+        except scan.ScanPending as exc:
+            return {'error': str(exc)}
+        except Exception as exc:  # shown to the user instead of a generic scan error
+            import logging
+
+            logging.getLogger('inventree').exception('SupplierPartImport: import from scan')
+            return {'error': f'Import from the scanned code failed: {exc}'}
+
+        if created is None:
+            return None
+
+        part, message = created
+        import logging
+
+        logging.getLogger('inventree').info('SupplierPartImport: %s (user %s)', message, user)
+        return {part.barcode_model_type(): part.format_matched_response(user=user), 'success': message}
 
     def setup_urls(self):
         """API endpoints, served below /plugin/supplier-part-import/."""

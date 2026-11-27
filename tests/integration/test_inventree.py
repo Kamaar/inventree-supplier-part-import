@@ -282,3 +282,176 @@ def test_static_files_resolve(plugin):
     url = plugin.plugin_static_file('ImportPage.js:renderImportPage')
 
     assert url.startswith('/static/plugins/supplier-part-import/ImportPage-') and url.endswith(':renderImportPage')
+
+
+def test_image_timeout_is_retried_then_other_suppliers(monkeypatch):
+    """A timed-out image is retried once, then the images of the other suppliers are tried."""
+    import requests
+    from PIL import Image
+
+    import InvenTree.helpers_model as helpers
+    from part.models import Part
+
+    calls = []
+
+    def fake_download(url, timeout=None):
+        calls.append(url)
+
+        if 'mouser' in url:
+            raise requests.exceptions.Timeout('Read timed out')
+
+        return Image.new('RGB', (4, 4))
+
+    monkeypatch.setattr(helpers, 'download_image_from_url', fake_download)
+    part = Part.objects.create(name='IT-IMAGE-FALLBACK', component=True)
+
+    warnings = importer.save_image(part, [
+        ('', 'https://mouser.example/smz24.jpg'),
+        ('Mouser', 'https://mouser.example/smz24.jpg'),
+        ('DigiKey', 'https://digikey.example/smz24.jpg'),
+    ])
+
+    part.refresh_from_db()
+    assert part.image
+    # Mouser twice (timeout retried), the same URL not tried again, then DigiKey
+    assert calls == ['https://mouser.example/smz24.jpg'] * 2 + ['https://digikey.example/smz24.jpg']
+    assert len(warnings) == 1 and warnings[0].startswith('Image taken from DigiKey')
+
+
+def test_scan_waits_for_the_import_then_asks_to_scan_again(plugin, monkeypatch):
+    """The import still running in the worker after SCAN_WAIT: the app is told to scan again (no timeout)."""
+    import InvenTree.tasks
+
+    from part_pricing_update import api as pricing_api
+    from supplier_part_import import scan
+
+    queued = []
+    monkeypatch.setattr(InvenTree.tasks, 'offload_task', lambda *args, **kwargs: queued.append(args) or 'task-it-1')
+    monkeypatch.setattr(pricing_api, 'configured_suppliers', lambda: ['mouser'])
+    monkeypatch.setattr(scan, 'SCAN_WAIT', 0.2)
+    monkeypatch.setattr(scan, 'POLL_INTERVAL', 0.05)
+    previous = plugin.get_setting('CREATE_ON_SCAN')
+    plugin.set_setting('CREATE_ON_SCAN', True)
+
+    try:
+        from django.contrib.auth.models import User
+
+        user = User.objects.create_superuser('it-scan-wait', 'it-scan-wait@example.com', 'it-scan-password')
+
+        with pytest.raises(scan.ScanPending, match='scan again'):
+            scan.create_from_scan('637-WAIT1', user)
+
+        assert queued == [(scan.SCAN_TASK, '637-WAIT1', 'mouser', user.pk)]
+        # The plugin answers with an error message, shown by the app
+        assert 'scan again' in plugin.scan('637-WAIT1', user)['error']
+    finally:
+        plugin.set_setting('CREATE_ON_SCAN', previous)
+
+
+def test_sku_formats_of_the_scanned_codes():
+    from supplier_part_import.scan import supplier_for_sku
+
+    all_suppliers = ['digikey', 'farnell', 'mouser']
+    assert supplier_for_sku('637-SMZ24', all_suppliers) == 'mouser'
+    assert supplier_for_sku('296-1234-1-ND', all_suppliers) == 'digikey'
+    assert supplier_for_sku('2508526', all_suppliers) == 'farnell'
+    # Other barcodes of the labels: order number, line, customer code, quantity
+    for text in ('367', '002', 'COMP', '20', '093755626'):
+        assert supplier_for_sku(text, all_suppliers) is None
+    # Not configured: not looked up
+    assert supplier_for_sku('637-SMZ24', ['digikey']) is None
+
+
+def test_scanned_ipn_is_not_imported(plugin, monkeypatch):
+    """A numeric customer part number (IPN) looks like a Farnell code: an existing IPN is never imported."""
+    from django.contrib.auth.models import User
+    from part.models import Part
+
+    from part_pricing_update import api as pricing_api
+    from supplier_part_import import scan
+
+    monkeypatch.setattr(pricing_api, 'configured_suppliers', lambda: ['farnell'])
+    monkeypatch.setattr(importer, 'preview', lambda *args, **kwargs: pytest.fail('looked up at the supplier'))
+    Part.objects.create(name='IT-IPN-NUMERIC', IPN='4200017', component=True)
+    previous = plugin.get_setting('CREATE_ON_SCAN')
+    plugin.set_setting('CREATE_ON_SCAN', True)
+
+    try:
+        user = User.objects.create_superuser('it-scan-ipn', 'it-scan-ipn@example.com', 'it-scan-password')
+        assert scan.create_from_scan('4200017', user) is None
+    finally:
+        plugin.set_setting('CREATE_ON_SCAN', previous)
+
+
+def test_scanned_sku_creates_the_part_in_the_fallback_category(plugin, clean_mappings, monkeypatch):
+    """CREATE_ON_SCAN: an unknown Mouser P/N is imported, the app opens the new part; a second scan finds it."""
+    from company.models import Company, SupplierPart
+    from django.contrib.auth.models import User
+    from rest_framework.test import APIClient
+
+    from part_pricing_update import api as pricing_api
+    from supplier_part_import import scan
+
+    Company.objects.create(name='Mouser Electronics IT', is_supplier=True)
+    product = details('mouser', category=('Diodes', 'Zener Diodes'))
+    product.sku, product.mpn, product.manufacturer = '637-SMZ24', 'SMZ24', 'Diotec Semiconductor'
+    product.description = 'Zener, Melf, 24V, 2W'
+
+    def fake_preview(supplier, sku, searched=''):
+        token = importer.save_preview({
+            'sources': {'mouser': product},
+            'primary': 'mouser',
+            'parameter_source': 'mouser',
+            'parameter_details': product,
+            'existing_codes': {'codes': ['SMZ24', '637-SMZ24'], 'old_names': [], 'searched': ''},
+        })
+        return {
+            'token': token,
+            'part': {'name': 'SMZ24', 'description': product.description, 'IPN': '', 'revision': 'A',
+                     'category': None, 'category_path': '', 'new_category': 'Diodes/Zener',
+                     'image_url': 'https://mouser.example/smz24.jpg',
+                     'datasheet_url': ''},
+            'manufacturer': product.manufacturer,
+            'mpn': 'SMZ24',
+            'parameters': [],
+            'supplier_parts': [{'supplier': 'mouser', 'sku': '637-SMZ24', 'include': True}],
+            'existing_part': None,
+            'existing_parts': [],
+        }
+
+    images = []
+    monkeypatch.setattr(importer, 'preview', fake_preview)
+    monkeypatch.setattr(importer, 'save_image', lambda part, candidates: images.append((part.pk, candidates)) or [])
+    monkeypatch.setattr(pricing_api, 'configured_suppliers', lambda: ['mouser'])
+    previous = {key: plugin.get_setting(key) for key in ('CREATE_ON_SCAN', 'SCAN_CATEGORY')}
+    plugin.set_setting('CREATE_ON_SCAN', True)
+    plugin.set_setting('SCAN_CATEGORY', 'IT scan/To classify')
+
+    try:
+        user = User.objects.create_superuser('it-scan', 'it-scan@example.com', 'it-scan-password')
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.post('/api/barcode/', {'barcode': '637-SMZ24'}, format='json')
+
+        assert response.status_code == 200, response.data
+        # InvenTree replaces the plugin message with its generic 'Match found' text
+        assert response.data.get('success')
+        sp = SupplierPart.objects.get(SKU='637-SMZ24')
+        assert response.data['part']['pk'] == sp.part.pk
+        # No mapped category: the fallback one, created with its parent; the pending mapping path is not created
+        assert sp.part.category.pathstring == 'IT scan/To classify'
+        # Imported by the task (synchronously here: no worker), image included
+        assert images == [(sp.part.pk, [('', 'https://mouser.example/smz24.jpg')])]
+
+        # Scanned again: the existing supplier part is opened, nothing is created
+        again = client.post('/api/barcode/', {'barcode': '637-SMZ24'}, format='json')
+        assert again.status_code == 200 and again.data['supplierpart']['pk'] == sp.pk
+        assert SupplierPart.objects.filter(SKU='637-SMZ24').count() == 1
+
+        # Off: an unknown code is not imported
+        plugin.set_setting('CREATE_ON_SCAN', False)
+        assert scan.create_from_scan('637-OTHER', user) is None
+    finally:
+        for key, value in previous.items():
+            plugin.set_setting(key, value if value is not None else '')

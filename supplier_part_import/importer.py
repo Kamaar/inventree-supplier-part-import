@@ -931,7 +931,13 @@ def create(data: dict, user=None) -> dict:
                 warnings.append(f'{sp.SKU}: prices not saved ({exc})')
 
     if data.get('download_image', True) and form.get('image_url') and (created or not part.image):
-        warnings += save_image(part, form['image_url'])
+        # The image chosen in the form first, then the ones of the other suppliers
+        candidates = [('', form['image_url'])] + [
+            (api.SUPPLIER_NAMES.get(key, key), details.image_url)
+            for key, details in sources.items()
+            if details and details.image_url
+        ]
+        warnings += save_image(part, candidates)
 
     return {
         'pk': part.pk,
@@ -1073,21 +1079,63 @@ def attach_link(part, url: str, comment: str, unique_comment: bool = False) -> b
     return True
 
 
-def save_image(part, url: str) -> list[str]:
-    """Download the product image (failures are only warnings)."""
-    from django.core.files.base import ContentFile
+IMAGE_TIMEOUT = 10  # seconds for each download attempt
 
+
+def _is_timeout(exc: Exception) -> bool:
+    import requests
+
+    return isinstance(exc, requests.exceptions.Timeout) or 'timed out' in str(exc).lower() or 'timeout' in str(exc).lower()
+
+
+def download_image(url: str):
+    """The image at url; a timeout is retried once (the supplier CDNs are sometimes slow)."""
     from InvenTree.helpers_model import download_image_from_url
 
     try:
-        image = download_image_from_url(url, timeout=10)
-        fmt = (image.format or 'PNG').lower()
+        return download_image_from_url(url, timeout=IMAGE_TIMEOUT)
+    except Exception as exc:  # only a timeout is retried
+        if not _is_timeout(exc):
+            raise
 
-        import io
+        logger.info('SupplierPartImport: image %s timed out, retrying', url)
+        return download_image_from_url(url, timeout=IMAGE_TIMEOUT)
 
-        buffer = io.BytesIO()
-        image.save(buffer, format=image.format or 'PNG')
-        part.image.save(f'part_{part.pk}_image.{fmt}', ContentFile(buffer.getvalue()), save=True)
+
+def save_image(part, candidates) -> list[str]:
+    """Download the product image (failures are only warnings).
+
+    candidates: an URL, or a list of (supplier name, URL) tried in order: the image of
+    the form first, then the ones of the other suppliers when a download fails.
+    """
+    import io
+
+    from django.core.files.base import ContentFile
+
+    if isinstance(candidates, str):
+        candidates = [('', candidates)]
+
+    tried, errors = set(), []
+
+    for supplier, url in candidates:
+        if not url or url in tried:
+            continue
+
+        tried.add(url)
+
+        try:
+            image = download_image(url)
+            fmt = (image.format or 'PNG').lower()
+            buffer = io.BytesIO()
+            image.save(buffer, format=image.format or 'PNG')
+            part.image.save(f'part_{part.pk}_image.{fmt}', ContentFile(buffer.getvalue()), save=True)
+        except Exception as exc:  # noqa: BLE001 - network / image format errors: only a warning
+            errors.append(f'{supplier or "selected image"}: {exc}')
+            continue
+
+        if errors:
+            return [f'Image taken from {supplier} ({"; ".join(errors)})']
+
         return []
-    except Exception as exc:  # noqa: BLE001 - network / image format errors: only a warning
-        return [f'Image not downloaded: {exc}']
+
+    return [f'Image not downloaded: {"; ".join(errors)}'] if errors else []

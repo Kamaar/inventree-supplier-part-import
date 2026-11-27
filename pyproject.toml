@@ -20,7 +20,7 @@ requires-python = ">=3.10"
 dependencies = [
     # Supplier API clients, credentials and daily quota (part_pricing_update.api);
     # 0.4.9: Farnell category (product type), aliases of the renamed products
-    "inventree-part-pricing-update>=0.4.9",
+    "inventree-part-pricing-update>=0.4.25",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

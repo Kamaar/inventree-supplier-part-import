@@ -252,6 +252,28 @@ missing categories stay pending, as above.
 | Ignored parameters | Farnell internal fields… | Never imported |
 | Alternate suppliers | yes | Propose the supplier parts of the other suppliers |
 | RoHS / REACH declarations | yes | Attach the manufacturer declarations (1 DigiKey request) |
+| Create parts from scanned codes | no | See *Create from a scan* |
+| Category of the scanned parts | To classify | Category of the parts created from a scan when no mapping proposes one; created if missing, a path `A/B` is allowed |
+
+### Create from a scan
+
+With *Create parts from scanned codes* enabled, a scanned supplier code which is not in InvenTree yet (the **P/N**
+barcode of a Mouser, DigiKey or Farnell label: `637-SMZ24`, `296-1234-1-ND`, `2508526`) is imported with the values
+the import page would propose, and the part is opened, also in the **InvenTree app** (which cannot show the import
+form):
+
+- only for the users who can create parts, and only for a code in the SKU format of a configured supplier that the
+  supplier returns as exactly that product (the other barcodes of the label, order number, quantity…, are ignored);
+- the category of the mappings, otherwise the *Category of the scanned parts* (never a new category tree);
+- an existing part with the same codes (MPN, SKU of another supplier, old name) gets only the missing supplier parts
+  and parameters;
+- the import runs in the **background worker** (the supplier requests take 10-20 s, the app gives up after about
+  20 s): the scan waits up to 12 s and opens the new part; if the import is still running, the app shows
+  *import in progress, scan again in a few seconds* and the next scan opens the part;
+- the warnings of the import are not shown in the app: check the new part on the web and move it to its category.
+
+A code already in InvenTree (SKU, or IPN as customer part number) is opened by the barcode lookup of
+[inventree-part-pricing-update](https://github.com/Kamaar/inventree-part-pricing-update) (>= 0.4.25).
 
 ## Development
 
